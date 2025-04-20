@@ -1,0 +1,60 @@
+from flask import Flask, render_template, request, jsonify
+import json
+import datetime
+import math
+from sheet_utils import log_attendance
+
+app = Flask(__name__)
+
+# Load whitelist (approved emails)
+with open("whitelist.json", "r") as f:
+    WHITELIST = set(json.load(f))
+
+# Set your office geolocation (example: Halifax, NS)
+OFFICE_LAT = 44.72338559753693
+OFFICE_LON = -63.6954247294425
+GEOFENCE_RADIUS_KM = 0.15  # 150 meters
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371  # Earth radius in km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (math.sin(dlat / 2) ** 2 +
+         math.cos(math.radians(lat1)) *
+         math.cos(math.radians(lat2)) *
+         math.sin(dlon / 2) ** 2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/submit", methods=["POST"])
+def submit():
+    data = request.json
+    email = data.get("email")
+    lat = float(data.get("latitude"))
+    lon = float(data.get("longitude"))
+
+    if not email or not lat or not lon:
+        return jsonify({"status": "error", "message": "Missing data"}), 400
+
+    if email not in WHITELIST:
+        return jsonify({"status": "error", "message": "Email not authorized"}), 403
+
+    distance = haversine(float(lat), float(lon), OFFICE_LAT, OFFICE_LON)
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    if distance > GEOFENCE_RADIUS_KM:
+        # Outside office — mark as absent
+        log_attendance(email, lat, lon, now, "Absent")
+        return jsonify({"status": "warning", "message": "You are outside office. Marked Absent."})
+    else:
+        # Inside office — mark as present
+        log_attendance(email, lat, lon, now, "Present")
+        return jsonify({"status": "success", "message": "Attendance marked!"})
+
+if __name__ == "__main__":
+    app.run(debug=True, host='0.0.0.0')
+

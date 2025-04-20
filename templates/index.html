@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ignitemeetup Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding-top: 40px;
+      line-height: 1.6;
+      background-color: #ffffff;
+      color: #000000;
+    }
+
+    label {
+      display: block;
+      margin-top: 1em;
+      font-weight: bold;
+    }
+
+    input[type="email"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 0.5em;
+      border: 1px solid #999;
+      border-radius: 4px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 1em;
+      background-color: #004080;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:focus, input:focus {
+      outline: 3px solid #ffbf00;
+      outline-offset: 2px;
+    }
+
+    .status {
+      margin-top: 1em;
+      padding: 12px;
+      border-radius: 4px;
+    }
+
+    .success {
+      background-color: #d1e7dd;
+      color: #0f5132;
+    }
+
+    .error {
+      background-color: #f8d7da;
+      color: #842029;
+    }
+
+    .warning {
+      background-color: #fff3cd;
+      color: #664d03;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Ignitemeetup Attendance</h1>
+
+  <form onsubmit="event.preventDefault(); markAttendance();" aria-label="Attendance Form">
+    <label for="email">IBM Email</label>
+    <input type="email" id="email" name="email" placeholder="email@ibm.com" required aria-required="true" aria-describedby="emailHelp" />
+    <small id="emailHelp">We only accept authorized emails.</small>
+
+    <button type="submit">Submit Attendance</button>
+  </form>
+
+  <div id="status" class="status" role="alert" aria-live="polite"></div>
+
+  <script>
+    function markAttendance() {
+      const emailInput = document.getElementById("email");
+      const statusDiv = document.getElementById("status");
+      const email = emailInput.value.trim();
+
+      if (!email) {
+        statusDiv.className = "status error";
+        statusDiv.innerText = "Please enter your email.";
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        statusDiv.className = "status error";
+        statusDiv.innerText = "Geolocation is not supported by your browser.";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          const data = {
+            email: email,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          };
+
+          fetch("/submit", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+          })
+          .then(response => response.json())
+          .then(res => {
+            if (res.status === "success") {
+              statusDiv.className = "status success";
+              statusDiv.innerText = res.message;
+            } else if (res.status === "warning") {
+              statusDiv.className = "status warning";
+              statusDiv.innerText = res.message;
+            } else {
+              statusDiv.className = "status error";
+              statusDiv.innerText = res.message;
+            }
+          });
+        },
+        function(error) {
+          statusDiv.className = "status error";
+          statusDiv.innerText = "Location access denied or unavailable.";
+        }
+      );
+    }
+  </script>
+</body>
+</html>
