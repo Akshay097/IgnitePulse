@@ -5,21 +5,21 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
-# Load credentials
-if os.path.exists("/etc/secrets/credentials.json"):
-    print("🔐 Loading credentials from: /etc/secrets/credentials.json", flush=True)
-    CREDENTIALS_PATH = "/etc/secrets/credentials.json"
-else:
-    print("🔐 Loading credentials from: credentials.json (local)", flush=True)
+# ✅ Detect if running locally or on Render
+if os.path.exists("credentials.json"):
     CREDENTIALS_PATH = "credentials.json"
+    print("🔐 Using local credentials.json", flush=True)
+else:
+    CREDENTIALS_PATH = "/etc/secrets/credentials.json"
+    print("🔐 Using deployed secret credentials.json", flush=True)
 
 try:
     creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_PATH, SCOPE)
     client = gspread.authorize(creds)
     print("✅ Google Sheets authorized successfully", flush=True)
 except Exception as e:
-    print("❌ Failed to authorize Google Sheets:", str(e), flush=True)
     client = None
+    print("❌ Failed to authorize Google Sheets:", str(e), flush=True)
 
 def log_attendance(email, lat, lon, timestamp, status):
     if not client:
@@ -39,10 +39,11 @@ def log_attendance(email, lat, lon, timestamp, status):
 
         print(f"📥 Logging attendance for: {email}", flush=True)
         print(f"📍 Location: {lat}, {lon} | Status: {status} | Time: {timestamp}", flush=True)
-        print(f"📄 Using sheet tab: {sheet_title}", flush=True)
 
         worksheet.append_row([email, lat, lon, status, timestamp])
         print("✅ Row logged successfully", flush=True)
 
     except Exception as e:
-        print("⚠️ Error logging attendance:", str(e), flush=True)
+        import traceback
+        print("⚠️ Error logging attendance:", flush=True)
+        traceback.print_exc()
