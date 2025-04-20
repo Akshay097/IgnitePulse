@@ -41,16 +41,20 @@ def submit():
         return jsonify({"status": "error", "message": "Missing data"}), 400
 
     if email not in WHITELIST:
-        print("⚠️ Email not in whitelist, but continuing for debug")
+        print(f"⚠️ Email not in whitelist: {email} — continuing for debug", flush=True)
 
     distance = haversine(float(lat), float(lon), OFFICE_LAT, OFFICE_LON)
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    print(f"📏 Calculated distance: {distance:.4f} km", flush=True)
+
     if distance > GEOFENCE_RADIUS_KM:
+        print("🚫 Outside geofence — marking Absent", flush=True)
         # Outside office — mark as absent
         log_attendance(email, lat, lon, now, "Absent")
         return jsonify({"status": "warning", "message": "You are outside office. Marked Absent."})
     else:
+        print("✅ Inside geofence — marking Present", flush=True)
         # Inside office — mark as present
         log_attendance(email, lat, lon, now, "Present")
         return jsonify({"status": "success", "message": "Attendance marked!"})
