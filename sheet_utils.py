@@ -21,15 +21,26 @@ SHEET_NAME = "Ignitemeetup_Attendance"
 
 def log_attendance(email, lat, lon, timestamp, status):
     try:
+        print(f"📥 Logging for {email} at {timestamp} - {status}")
+        print(f"📍 Coordinates received: {lat}, {lon}")
+
         date_sheet_name = datetime.datetime.now().strftime("%m-%d-%Y")
 
-        # Try to open the sheet, or create a new one if not exists
         try:
             worksheet = client.open(SHEET_NAME).worksheet(date_sheet_name)
         except gspread.exceptions.WorksheetNotFound:
-            worksheet = client.open(SHEET_NAME).add_worksheet(title=date_sheet_name, rows="100", cols="6")
+            print(f"➕ Creating new sheet tab: {date_sheet_name}")
+            worksheet = client.open(SHEET_NAME).add_worksheet(
+                title=date_sheet_name,
+                rows="100",
+                cols="6"
+            )
             worksheet.append_row(["Timestamp", "Email", "Latitude", "Longitude", "Status"])
 
         worksheet.append_row([timestamp, email, lat, lon, status])
+        print("✅ Row successfully logged in Google Sheet")
+
     except Exception as e:
-        print("Error logging attendance:", str(e))
+        print("⚠️ Error logging attendance:", str(e))
+
+
