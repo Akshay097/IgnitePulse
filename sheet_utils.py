@@ -1,11 +1,11 @@
 import os
+import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import datetime
 
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
-# Dynamically choose the right path for credentials
+# Load credentials
 if os.path.exists("/etc/secrets/credentials.json"):
     print("🔐 Loading credentials from: /etc/secrets/credentials.json", flush=True)
     CREDENTIALS_PATH = "/etc/secrets/credentials.json"
@@ -19,34 +19,30 @@ try:
     print("✅ Google Sheets authorized successfully", flush=True)
 except Exception as e:
     print("❌ Failed to authorize Google Sheets:", str(e), flush=True)
-    client = None  # Important! Prevent crash later
-
-SHEET_NAME = "Ignitemeetup_Attendance"
+    client = None
 
 def log_attendance(email, lat, lon, timestamp, status):
+    if not client:
+        print("⚠️ Skipping Google Sheet write: client not available", flush=True)
+        return
+
     try:
-        if client is None:
-            print("⚠️ Skipping Google Sheet write: client not available", flush=True)
-            return
+        sheet = client.open("Ignitemeetup Attendance").worksheet("Sheet1")
+
+        sheet_title = datetime.datetime.now().strftime("%m-%d-%Y")
+        try:
+            worksheet = client.open("Ignitemeetup Attendance").worksheet(sheet_title)
+        except gspread.exceptions.WorksheetNotFound:
+            print(f"📄 Creating new sheet tab: {sheet_title}", flush=True)
+            worksheet = client.open("Ignitemeetup Attendance").add_worksheet(title=sheet_title, rows="100", cols="10")
+            worksheet.append_row(["Email", "Latitude", "Longitude", "Status", "Timestamp"])
 
         print(f"📥 Logging attendance for: {email}", flush=True)
         print(f"📍 Location: {lat}, {lon} | Status: {status} | Time: {timestamp}", flush=True)
+        print(f"📄 Using sheet tab: {sheet_title}", flush=True)
 
-        sheet_name = timestamp.split(" ")[0]
-        sheet_tab = datetime.datetime.strptime(sheet_name, "%Y-%m-%d").strftime("%m-%d-%Y")
-        print(f"📄 Using sheet tab: {sheet_tab}", flush=True)
-
-        try:
-            worksheet = client.open("Ignitemeetup-Attendance").worksheet(sheet_tab)
-        except gspread.exceptions.WorksheetNotFound:
-            print("➕ Sheet tab not found — creating new one", flush=True)
-            template = client.open("Ignitemeetup-Attendance").sheet1
-            worksheet = client.open("Ignitemeetup-Attendance").add_worksheet(title=sheet_tab, rows="100", cols="6")
-            worksheet.insert_row(template.row_values(1), index=1)
-
-        worksheet.append_row([email, lat, lon, timestamp, status])
+        worksheet.append_row([email, lat, lon, status, timestamp])
         print("✅ Row logged successfully", flush=True)
 
     except Exception as e:
         print("⚠️ Error logging attendance:", str(e), flush=True)
-
