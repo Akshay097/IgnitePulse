@@ -23,8 +23,8 @@ SHEET_NAME = "Ignitemeetup_Attendance"
 
 def log_attendance(email, lat, lon, timestamp, status):
     try:
-        print(f"\n📥 Logging attendance for: {email}")
-        print(f"📍 Location: {lat}, {lon} | Status: {status} | Time: {timestamp}")
+        print(f"📥 Logging attendance for: {email}", flush=True)
+        print(f"📍 Location: {lat}, {lon} | Status: {status} | Time: {timestamp}", flush=True)
 
         date_sheet_name = datetime.datetime.now().strftime("%m-%d-%Y")
         print(f"📄 Using sheet tab: {date_sheet_name}")
@@ -45,4 +45,5 @@ def log_attendance(email, lat, lon, timestamp, status):
         print("✅ Row logged successfully")
 
     except Exception as e:
-        print("⚠️ Error logging attendance:", str(e))
+        print("✅ Row logged successfully", flush=True)
+        print("⚠️ Error logging attendance:", str(e), flush=True)
