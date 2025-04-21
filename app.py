@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import json
 import datetime
 import math
+import pytz  # ✅ timezone for Atlantic
 from sheet_utils import log_attendance
 from qr_generator import qr_bp  # ✅ import the blueprint
 
@@ -46,22 +47,23 @@ def submit():
         print(f"❌ Unauthorized email: {email} — blocked", flush=True)
         return jsonify({"status": "error", "message": "Unauthorized email"}), 403
 
-    distance = haversine(float(lat), float(lon), OFFICE_LAT, OFFICE_LON)
-    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    distance = haversine(lat, lon, OFFICE_LAT, OFFICE_LON)
+
+    # Use Atlantic Daylight Time
+    atlantic = pytz.timezone("Canada/Atlantic")
+    now = datetime.datetime.now(atlantic).strftime("%Y-%m-%d %H:%M:%S")
 
     print(f"📏 Calculated distance: {distance:.4f} km", flush=True)
 
     if distance > GEOFENCE_RADIUS_KM:
         print("🚫 Outside geofence — marking Absent", flush=True)
-        # Outside office — mark as absent
         log_attendance(email, lat, lon, now, "Absent")
         return jsonify({"status": "warning", "message": "You are outside office. Marked Absent."})
     else:
         print("✅ Inside geofence — marking Present", flush=True)
-        # Inside office — mark as present
         log_attendance(email, lat, lon, now, "Present")
         return jsonify({"status": "success", "message": "Attendance marked!"})
-    
+
 @app.route("/qrcode")
 def show_qr():
     today = datetime.datetime.now().strftime("%m-%d-%Y")
@@ -69,7 +71,5 @@ def show_qr():
     qr_path = f"/static/{qr_filename}"
     return render_template("qrcode.html", today=today, qr_path=qr_path)
 
-
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0')
-
