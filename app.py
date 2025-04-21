@@ -59,6 +59,13 @@ def submit():
         # Inside office — mark as present
         log_attendance(email, lat, lon, now, "Present")
         return jsonify({"status": "success", "message": "Attendance marked!"})
+    
+@app.route("/qrcode")
+def show_qr():
+    today = datetime.datetime.now().strftime("%m-%d-%Y")
+    qr_filename = f"qr_{today}.png"
+    qr_path = f"/static/{qr_filename}"
+    return render_template("qrcode.html", today=today, qr_path=qr_path)
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0')

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Today's Attendance QR Code</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { text-align: center; font-family: Arial; padding: 2rem; }
+    img { max-width: 300px; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h2>Scan to Mark Your Attendance</h2>
+  <p>Date: {{ today }}</p>
+  <img src="{{ qr_path }}" alt="QR Code">
+</body>
+</html>
