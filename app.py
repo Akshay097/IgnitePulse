@@ -3,8 +3,10 @@ import json
 import datetime
 import math
 from sheet_utils import log_attendance
+from qr_generator import qr_bp  # ✅ import the blueprint
 
 app = Flask(__name__)
+app.register_blueprint(qr_bp)  # ✅ attach the QR routes to main app
 
 # Load whitelist (approved emails)
 with open("whitelist.json", "r") as f:
@@ -66,6 +68,7 @@ def show_qr():
     qr_filename = f"qr_{today}.png"
     qr_path = f"/static/{qr_filename}"
     return render_template("qrcode.html", today=today, qr_path=qr_path)
+
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0')

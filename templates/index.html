@@ -2,102 +2,98 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ignitemeetup Attendance</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <style>
     body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: auto;
-      padding-top: 40px;
-      line-height: 1.6;
-      background-color: #ffffff;
-      color: #000000;
+      background-color: #111;
+      color: #fff;
+      font-family: "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+      margin: 0;
     }
 
-    label {
-      display: block;
-      margin-top: 1em;
-      font-weight: bold;
+    h2 {
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
+      text-align: center;
     }
 
-    input[type="email"] {
+    input, button {
       width: 100%;
+      max-width: 300px;
       padding: 12px;
-      margin-top: 0.5em;
-      border: 1px solid #999;
-      border-radius: 4px;
+      margin: 10px 0;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+    }
+
+    input {
+      background-color: #fff;
+      color: #000;
     }
 
     button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 1em;
-      background-color: #004080;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 1rem;
+      background-color: #000;
+      color: #fff;
       cursor: pointer;
+      transition: background 0.3s ease;
     }
 
-    button:focus, input:focus {
-      outline: 3px solid #ffbf00;
-      outline-offset: 2px;
+    button:hover {
+      background-color: #333;
     }
 
-    .status {
-      margin-top: 1em;
-      padding: 12px;
-      border-radius: 4px;
+    #status {
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      text-align: center;
     }
 
     .success {
-      background-color: #d1e7dd;
-      color: #0f5132;
+      color: #4caf50;
     }
 
     .error {
-      background-color: #f8d7da;
-      color: #842029;
+      color: #f44336;
     }
 
-    .warning {
-      background-color: #fff3cd;
-      color: #664d03;
+    @media (prefers-contrast: high) {
+      body {
+        background-color: #000;
+        color: #fff;
+      }
     }
   </style>
 </head>
-
 <body>
-  <h1>Ignitemeetup Attendance</h1>
+  <h2>Mark Your Attendance</h2>
 
-  <form onsubmit="event.preventDefault(); markAttendance();" aria-label="Attendance Form">
-    <label for="email">IBM Email</label>
-    <input type="email" id="email" name="email" placeholder="email@ibm.com" required aria-required="true" aria-describedby="emailHelp" />
-    <small id="emailHelp">We only accept authorized emails.</small>
+  <input type="email" id="email" placeholder="Enter your company email" required aria-label="Email input" />
+  <button onclick="markAttendance()">Submit Attendance</button>
 
-    <button type="submit">Submit Attendance</button>
-  </form>
-
-  <div id="status" class="status" role="alert" aria-live="polite"></div>
+  <p id="status" role="status" aria-live="polite"></p>
 
   <script>
     function markAttendance() {
-      const emailInput = document.getElementById("email");
-      const statusDiv = document.getElementById("status");
-      const email = emailInput.value.trim();
+      const email = document.getElementById("email").value;
+      const statusEl = document.getElementById("status");
 
       if (!email) {
-        statusDiv.className = "status error";
-        statusDiv.innerText = "Please enter your email.";
+        statusEl.className = "error";
+        statusEl.innerText = "Email is required.";
         return;
       }
 
       if (!navigator.geolocation) {
-        statusDiv.className = "status error";
-        statusDiv.innerText = "Geolocation is not supported by your browser.";
+        statusEl.className = "error";
+        statusEl.innerText = "Geolocation is not supported by your browser.";
         return;
       }
 
@@ -119,20 +115,17 @@
           .then(response => response.json())
           .then(res => {
             if (res.status === "success") {
-              statusDiv.className = "status success";
-              statusDiv.innerText = res.message;
-            } else if (res.status === "warning") {
-              statusDiv.className = "status warning";
-              statusDiv.innerText = res.message;
+              statusEl.className = "success";
+              statusEl.innerText = res.message;
             } else {
-              statusDiv.className = "status error";
-              statusDiv.innerText = res.message;
+              statusEl.className = "error";
+              statusEl.innerText = res.message;
             }
           });
         },
         function(error) {
-          statusDiv.className = "status error";
-          statusDiv.innerText = "Location access denied or unavailable.";
+          statusEl.className = "error";
+          statusEl.innerText = "Location access denied.";
         }
       );
     }

@@ -1,21 +1,29 @@
+import io
 import qrcode
-import datetime
+from flask import Blueprint, send_file, url_for, render_template, request  # ✅ important
 
-# Base URL of your deployed app
-base_url = "https://ignitemeetup.onrender.com"
+from datetime import datetime
 
-# Generate today's date string
-today = datetime.datetime.now().strftime("%m-%d-%Y")
+qr_bp = Blueprint("qr", __name__)
 
-# Final link to embed in QR
-attendance_url = f"{base_url}?date={today}"
+# Route to generate the actual QR code image
+@qr_bp.route("/generate_qr")
+def generate_qr():
+    qr_data = url_for("index", _external=True)
+    qr = qrcode.make(qr_data)
 
-# Create QR code
-qr = qrcode.make(attendance_url)
+    img_io = io.BytesIO()
+    qr.save(img_io, "PNG")
+    img_io.seek(0)
 
-# Save it as image
-qr_file = f"static/qr_{today}.png"
-qr.save(qr_file)
+    return send_file(img_io, mimetype="image/png")
 
-print(f"✅ QR Code generated and saved as {qr_file}")
-print(f"📎 Link embedded: {attendance_url}")
+
+# Route to render the QR code page
+@qr_bp.route("/qrcode")
+def show_qr():
+    url = request.host_url.strip("/")  
+    date_today = datetime.now().strftime("%m-%d-%Y")  
+    print(f"🧪 Date passed to template: {date_today}", flush=True)  # ✅ Debug
+    return render_template("qrcode.html", date=date_today, url=url)
+

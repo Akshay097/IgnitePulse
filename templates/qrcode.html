@@ -1,17 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Today's Attendance QR Code</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scan to Mark Attendance</title>
   <style>
-    body { text-align: center; font-family: Arial; padding: 2rem; }
-    img { max-width: 300px; margin-top: 2rem; }
+    body {
+      background-color: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 1.8em;
+      margin-bottom: 10px;
+    }
+
+    .date {
+      font-size: 1em;
+      margin-bottom: 20px;
+      color: #ccc; /* Light gray contrast on dark background */
+    }
+
+    .qr-container {
+      padding: 15px;
+      background-color: #000;
+      border: 2px solid #fff;
+    }
+
+    .qr-container img {
+      width: 200px;
+      height: 200px;
+    }
+
+    /* Accessibility enhancement */
+    @media (prefers-contrast: high) {
+      body {
+        background-color: #000;
+        color: #fff;
+      }
+    }
+
+    img[alt="QR Code"] {
+      outline: 2px dashed #aaa;
+    }
   </style>
 </head>
 <body>
-  <h2>Scan to Mark Your Attendance</h2>
-  <p>Date: {{ today }}</p>
-  <img src="{{ qr_path }}" alt="QR Code">
+  <h1>Scan to Mark Attendance</h1>
+  <div class="date" aria-label="Today's Date">
+    <span style="color: #ffffff; font-size: 1.2em; font-weight: bold; border: 1px solid #888; padding: 4px;">
+      Date: {{ date if date else 'Not Passed' }}
+    </span>
+  </div>
+       
+
+  <div class="qr-container">
+    <img src="{{ url }}/generate_qr" alt="QR Code" />
+  </div>
 </body>
 </html>
