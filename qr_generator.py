@@ -3,6 +3,7 @@ import qrcode
 from flask import Blueprint, send_file, url_for, render_template, request  # ✅ important
 
 from datetime import datetime
+import pytz
 
 qr_bp = Blueprint("qr", __name__)
 
@@ -23,7 +24,8 @@ def generate_qr():
 @qr_bp.route("/qrcode")
 def show_qr():
     url = request.host_url.strip("/")  
-    date_today = datetime.now().strftime("%m-%d-%Y")  
+    atlantic = pytz.timezone("Canada/Atlantic")
+    date_today = datetime.now(atlantic).strftime("%m-%d-%Y")  
     print(f"🧪 Date passed to template: {date_today}", flush=True)  # ✅ Debug
     return render_template("qrcode.html", date=date_today, url=url)
 
