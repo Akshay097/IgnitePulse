@@ -5,55 +5,78 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ignitemeetup Attendance</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      background-color: #111;
-      color: #fff;
+      margin: 0;
       font-family: "Segoe UI", sans-serif;
+      background-color: #f7f5f0;
+      background-image: radial-gradient(#aaa 1px, transparent 1px);
+      background-size: 20px 20px;
+      color: #111;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .card {
+      background-color: #fff;
+      border-radius: 18px;
       padding: 2rem;
-      margin: 0;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      border: 2px solid #000;
     }
 
     h2 {
-      font-size: 1.6rem;
-      margin-bottom: 1rem;
-      text-align: center;
-    }
-
-    input, button {
-      width: 100%;
-      max-width: 300px;
-      padding: 12px;
-      margin: 10px 0;
-      font-size: 1rem;
-      border: none;
-      border-radius: 5px;
-    }
-
-    input {
-      background-color: #fff;
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
       color: #000;
     }
 
+    input,
     button {
-      background-color: #000;
-      color: #fff;
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.75rem 0;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+    }
+
+    input {
+      background-color: #f0f0f0;
+      color: #000;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #ffe44c;
+      color: #000;
+      font-weight: bold;
+      font-size: 1rem;
+      padding: 0.75rem;
+      border: 2px solid #000;
+      border-radius: 8px;
+      box-shadow: 2px 2px 0 #000;
       cursor: pointer;
-      transition: background 0.3s ease;
+      transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
     }
 
     button:hover {
-      background-color: #333;
+      transform: translateY(-1px);
+      box-shadow: 4px 4px 0 #000;
     }
 
     #status {
       margin-top: 1rem;
       font-size: 0.95rem;
-      text-align: center;
     }
 
     .success {
@@ -64,21 +87,60 @@
       color: #f44336;
     }
 
+    @media screen and (max-width: 420px) {
+      .card {
+        padding: 1.5rem;
+        border-radius: 14px;
+        box-shadow: none;
+        border: 1px solid #000;
+      }
+
+      h2 {
+        font-size: 1.3rem;
+      }
+
+      input,
+      button {
+        font-size: 0.95rem;
+        padding: 0.65rem;
+      }
+
+      #status {
+        font-size: 0.9rem;
+      }
+    }
+
     @media (prefers-contrast: high) {
       body {
         background-color: #000;
         color: #fff;
       }
+
+      .card {
+        background-color: #111;
+        border: 2px solid #fff;
+      }
+
+      input {
+        background-color: #fff;
+        color: #000;
+      }
     }
   </style>
 </head>
 <body>
-  <h2>Mark Your Attendance</h2>
-
-  <input type="email" id="email" placeholder="Enter your company email" required aria-label="Email input" />
-  <button onclick="markAttendance()">Submit Attendance</button>
-
-  <p id="status" role="status" aria-live="polite"></p>
+  <div class="card">
+    <h2>Mark Your Attendance</h2>
+    <input
+      type="email"
+      id="email"
+      placeholder="name@ibm.com"
+      required
+      aria-label="Email input"
+    />
+    <button onclick="markAttendance()">Submit Attendance</button>
+    <p id="status" role="status" aria-live="polite"></p>
+  </div>
 
   <script>
     function markAttendance() {
@@ -98,7 +160,7 @@
       }
 
       navigator.geolocation.getCurrentPosition(
-        function(position) {
+        function (position) {
           const data = {
             email: email,
             latitude: position.coords.latitude,
@@ -112,18 +174,18 @@
             },
             body: JSON.stringify(data)
           })
-          .then(response => response.json())
-          .then(res => {
-            if (res.status === "success") {
-              statusEl.className = "success";
-              statusEl.innerText = res.message;
-            } else {
-              statusEl.className = "error";
-              statusEl.innerText = res.message;
-            }
-          });
+            .then((response) => response.json())
+            .then((res) => {
+              if (res.status === "success") {
+                statusEl.className = "success";
+                statusEl.innerText = res.message;
+              } else {
+                statusEl.className = "error";
+                statusEl.innerText = res.message;
+              }
+            });
         },
-        function(error) {
+        function (error) {
           statusEl.className = "error";
           statusEl.innerText = "Location access denied.";
         }
