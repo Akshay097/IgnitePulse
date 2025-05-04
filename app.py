@@ -40,6 +40,14 @@ def submit():
     lat = float(data.get("latitude"))
     lon = float(data.get("longitude"))
 
+    # ✅ Handle altitude safely
+    alt = data.get("altitude")
+    if alt is not None:
+        try:
+            alt = float(alt)
+        except ValueError:
+            alt = None
+
     if not email or not lat or not lon:
         return jsonify({"status": "error", "message": "Missing data"}), 400
 
@@ -47,6 +55,7 @@ def submit():
         print(f"❌ Unauthorized email: {email} — blocked", flush=True)
         return jsonify({"status": "error", "message": "Unauthorized email"}), 403
 
+    # ✅ This line must not be indented under the above if
     distance = haversine(lat, lon, OFFICE_LAT, OFFICE_LON)
 
     # Use Atlantic Daylight Time
@@ -54,15 +63,33 @@ def submit():
     now = datetime.datetime.now(atlantic).strftime("%Y-%m-%d %H:%M:%S")
 
     print(f"📏 Calculated distance: {distance:.4f} km", flush=True)
+    print(f"📐 Altitude received: {alt}", flush=True)
 
-    if distance > GEOFENCE_RADIUS_KM:
-        print("🚫 Outside geofence — marking Absent", flush=True)
-        log_attendance(email, lat, lon, now, "Absent")
-        return jsonify({"status": "warning", "message": "You are outside office. Marked Absent."})
-    else:
-        print("✅ Inside geofence — marking Present", flush=True)
-        log_attendance(email, lat, lon, now, "Present")
-        return jsonify({"status": "success", "message": "Attendance marked!"})
+    # Floor validation range (e.g. 5th floor)
+    ALT_MIN = 52
+    ALT_MAX = 62
+
+    # 🧠 Flexible logic
+    if alt is None:
+        print("⚠️ No altitude — falling back to geofence only", flush=True)
+        log_attendance(email, lat, lon, now, "Absent", alt)
+        return jsonify({
+            "status": "warning",
+            "message": "Please contact your Coach or Ignite Audit Team member immediately, if you're in the office. Marked Absent."
+        })
+
+    if distance > GEOFENCE_RADIUS_KM or not (ALT_MIN <= alt <= ALT_MAX):
+        print("🚫 Outside allowed location/altitude — Absent", flush=True)
+        log_attendance(email, lat, lon, now, "Absent", alt)
+        return jsonify({
+            "status": "warning",
+            "message": "You are outside the allowed area or floor. Marked Absent."
+        })
+
+    # ✅ Both conditions passed
+    print("✅ Inside geofence and altitude range — Present", flush=True)
+    log_attendance(email, lat, lon, now, "Present", alt)
+    return jsonify({"status": "success", "message": "Attendance marked!"})
 
 @app.route("/qrcode")
 def show_qr():

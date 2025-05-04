@@ -146,27 +146,28 @@
     function markAttendance() {
       const email = document.getElementById("email").value;
       const statusEl = document.getElementById("status");
-
+  
       if (!email) {
         statusEl.className = "error";
         statusEl.innerText = "Email is required.";
         return;
       }
-
+  
       if (!navigator.geolocation) {
         statusEl.className = "error";
         statusEl.innerText = "Geolocation is not supported by your browser.";
         return;
       }
-
+  
       navigator.geolocation.getCurrentPosition(
         function (position) {
           const data = {
             email: email,
             latitude: position.coords.latitude,
-            longitude: position.coords.longitude
+            longitude: position.coords.longitude,
+            altitude: position.coords.altitude || null  // ✅ FIXED
           };
-
+  
           fetch("/submit", {
             method: "POST",
             headers: {
@@ -174,16 +175,16 @@
             },
             body: JSON.stringify(data)
           })
-            .then((response) => response.json())
-            .then((res) => {
-              if (res.status === "success") {
-                statusEl.className = "success";
-                statusEl.innerText = res.message;
-              } else {
-                statusEl.className = "error";
-                statusEl.innerText = res.message;
-              }
-            });
+          .then((response) => response.json())
+          .then((res) => {
+            if (res.status === "success") {
+              statusEl.className = "success";
+              statusEl.innerText = res.message;
+            } else {
+              statusEl.className = "error";
+              statusEl.innerText = res.message;
+            }
+          });
         },
         function (error) {
           statusEl.className = "error";
@@ -191,6 +192,6 @@
         }
       );
     }
-  </script>
+  </script>  
 </body>
 </html>

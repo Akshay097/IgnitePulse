@@ -21,26 +21,23 @@ except Exception as e:
     client = None
     print("❌ Failed to authorize Google Sheets:", str(e), flush=True)
 
-def log_attendance(email, lat, lon, timestamp, status):
+def log_attendance(email, lat, lon, timestamp, status, altitude=None):
     if not client:
         print("⚠️ Skipping Google Sheet write: client not available", flush=True)
         return
 
     try:
-        sheet = client.open("Ignitemeetup Attendance").worksheet("Sheet1")
-
         sheet_title = datetime.datetime.now().strftime("%m-%d-%Y")
+        spreadsheet = client.open("Ignitemeetup Attendance")
+
         try:
-            worksheet = client.open("Ignitemeetup Attendance").worksheet(sheet_title)
+            worksheet = spreadsheet.worksheet(sheet_title)
         except gspread.exceptions.WorksheetNotFound:
             print(f"📄 Creating new sheet tab: {sheet_title}", flush=True)
-            worksheet = client.open("Ignitemeetup Attendance").add_worksheet(title=sheet_title, rows="100", cols="10")
-            worksheet.append_row(["Email", "Latitude", "Longitude", "Status", "Timestamp"])
+            worksheet = spreadsheet.add_worksheet(title=sheet_title, rows="100", cols="10")
+            worksheet.append_row(["Email", "Latitude", "Longitude", "Altitude", "Status", "Timestamp"])
 
-        print(f"📥 Logging attendance for: {email}", flush=True)
-        print(f"📍 Location: {lat}, {lon} | Status: {status} | Time: {timestamp}", flush=True)
-
-        worksheet.append_row([email, lat, lon, status, timestamp])
+        worksheet.append_row([email, lat, lon, altitude, status, timestamp])
         print("✅ Row logged successfully", flush=True)
 
     except Exception as e:
