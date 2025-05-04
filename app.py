@@ -16,7 +16,7 @@ with open("whitelist.json", "r") as f:
 # Set your office geolocation (example: Halifax, NS)
 OFFICE_LAT = 44.72338559753693
 OFFICE_LON = -63.6954247294425
-GEOFENCE_RADIUS_KM = 0.01  # 150 meters
+GEOFENCE_RADIUS_KM = 0.01  # 10 meters
 
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371  # Earth radius in km
@@ -66,7 +66,7 @@ def submit():
     print(f"📐 Altitude received: {alt}", flush=True)
 
     # Floor validation range (e.g. 5th floor)
-    ALT_MIN = 52
+    ALT_MIN = 48
     ALT_MAX = 62
 
     # 🧠 Flexible logic
