@@ -41,12 +41,12 @@ def log_attendance(email, lat, lon, timestamp, status, device_id=None, ip=None, 
             worksheet = spreadsheet.add_worksheet(title=sheet_title, rows="100", cols="12")
             worksheet.append_row([
                 "Email", "Latitude", "Longitude", "Status", "Timestamp",
-                "Device ID", "IP Address", "Audit Note"
+                "Device ID", "IP Address", "Reason"
             ])
 
         worksheet.append_row([
             email, lat, lon, status, timestamp,
-            device_id or "", ip or "", note
+            device_id or "N/A", ip or "N/A", note or ""
         ])
         print("✅ Row logged successfully", flush=True)
 
