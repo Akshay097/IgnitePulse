@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime
+import pytz
 
 AUDIT_LOG_FILE = "audit_log.json"
 
@@ -14,20 +15,19 @@ def save_audit_log(logs):
     with open(AUDIT_LOG_FILE, "w") as f:
         json.dump(logs, f, indent=2)
 
-def log_audit_entry(entry_type, email, detail, device_id=None, ip=None):
+def log_audit_entry(email, timestamp, device_id, ip, status, reason=""):
     logs = load_audit_log()
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     entry = {
-        "type": entry_type,
         "email": email,
-        "detail": detail,
-        "timestamp": now,
+        "timestamp": timestamp,
         "device_id": device_id,
-        "ip": ip
+        "ip": ip,
+        "status": status,
+        "reason": reason
     }
     logs.append(entry)
     save_audit_log(logs)
-    print(f"📋 Audit log → {entry_type} for {email}: {detail}", flush=True)
+    print(f"📝 Audit logged for {email} at {timestamp}", flush=True)
 
 def detect_device_sharing(device_id, email):
     logs = load_audit_log()
@@ -37,7 +37,7 @@ def detect_device_sharing(device_id, email):
     )
     if users_on_device:
         detail = f"Device used by multiple users: {', '.join(users_on_device)}"
-        log_audit_entry("device_sharing", email, detail, device_id=device_id)
+        print(f"⚠️ {detail}", flush=True)
         return True
     return False
 
@@ -49,6 +49,6 @@ def detect_multiple_ips(email, ip):
     )
     if known_ips:
         detail = f"Multiple IPs detected: {', '.join(known_ips)}"
-        log_audit_entry("multi_ip", email, detail, ip=ip)
+        print(f"⚠️ {detail}", flush=True)
         return True
     return False

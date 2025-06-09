@@ -1,11 +1,13 @@
 import os
 import datetime
 import gspread
+import pytz
 import json
 from oauth2client.service_account import ServiceAccountCredentials
 
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
+# 🔐 Credential setup
 if os.path.exists("credentials.json"):
     CREDENTIALS_PATH = "credentials.json"
     print("🔐 Using local credentials.json", flush=True)
@@ -22,23 +24,30 @@ except Exception as e:
     print("❌ Failed to authorize Google Sheets:", str(e), flush=True)
 
 
-def log_attendance(email, lat, lon, timestamp, status):
+def log_attendance(email, lat, lon, timestamp, status, device_id=None, ip=None, note=""):
     if not client:
         print("⚠️ Skipping Google Sheet write: client not available", flush=True)
         return
 
     try:
-        sheet_title = datetime.datetime.now().strftime("%m-%d-%Y")
+        atlantic = pytz.timezone("Canada/Atlantic")
+        sheet_title = datetime.datetime.now(atlantic).strftime("%m-%d-%Y")
         spreadsheet = client.open("Ignitemeetup Attendance")
 
         try:
             worksheet = spreadsheet.worksheet(sheet_title)
         except gspread.exceptions.WorksheetNotFound:
             print(f"📄 Creating new sheet tab: {sheet_title}", flush=True)
-            worksheet = spreadsheet.add_worksheet(title=sheet_title, rows="100", cols="10")
-            worksheet.append_row(["Email", "Latitude", "Longitude", "Status", "Timestamp"])
+            worksheet = spreadsheet.add_worksheet(title=sheet_title, rows="100", cols="12")
+            worksheet.append_row([
+                "Email", "Latitude", "Longitude", "Status", "Timestamp",
+                "Device ID", "IP Address", "Audit Note"
+            ])
 
-        worksheet.append_row([email, lat, lon, status, timestamp])
+        worksheet.append_row([
+            email, lat, lon, status, timestamp,
+            device_id or "", ip or "", note
+        ])
         print("✅ Row logged successfully", flush=True)
 
     except Exception as e:

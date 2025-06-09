@@ -82,12 +82,12 @@ def submit():
     print(f"📍 IP: {user_ip} | 📏 Distance: {distance:.2f} km")
 
     if distance > GEOFENCE_RADIUS_KM:
-        log_attendance(email, lat, lon, now_str, "Absent")
+        log_attendance(email, lat, lon, now_str, "Absent", device_id, user_ip, "Outside geofence")
         log_audit_entry(email, now_str, device_id, user_ip, "Absent", reason="Outside geofence")
-        return jsonify({"status": "warning", "message": "Outside office geofence. Marked Absent."})
+        return jsonify({"status": "warning", "message": "Outside office. Marked Absent."})
 
     # ✅ 6. Log successful attendance
-    log_attendance(email, lat, lon, now_str, "Present")
+    log_attendance(email, lat, lon, now_str, "Present", device_id, user_ip)
     log_audit_entry(email, now_str, device_id, user_ip, "Present")
     return jsonify({"status": "success", "message": "Attendance marked!"})
 
