@@ -1,1 +1,23 @@
-credentials.json 
+# Ignore Python bytecode and cache
+__pycache__/
+*.pyc
+
+# Ignore virtual environment
+venv/
+.VENV/
+.env/
+env/
+
+# Ignore local credentials or secrets
+credentials.json
+
+# Ignore generated QR codes or images
+*.png
+
+# Ignore documentation files
+*.docx
+
+# Runtime log/storage files
+audit_log.json
+binding.json
+submission_log.json

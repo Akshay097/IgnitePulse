@@ -3,66 +3,95 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scan to Mark Attendance</title>
+  <title>QR Code - Attendance</title>
   <style>
     body {
-      background-color: #111;
-      color: #fff;
-      font-family: Arial, sans-serif;
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f7f5f0;
+      background-image: radial-gradient(#aaa 1px, transparent 1px);
+      background-size: 20px 20px;
+      color: #000;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
+      padding: 1rem;
     }
 
-    h1 {
-      font-size: 1.8em;
-      margin-bottom: 10px;
+    .card {
+      background-color: #fff;
+      border-radius: 20px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+      text-align: center;
+      border: 2px solid #000;
+    }
+
+    .qr-heading {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #000;
+      background-color: #ffe44c;
+      padding: 0.75rem 1.25rem;
+      border-radius: 12px;
+      display: inline-block;
+      animation: pulse 1.5s ease-in-out infinite;
+      border: 2px solid #000;
+      box-shadow: 2px 2px 0 #000;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .qr-box {
+      margin: 2rem 0 1rem;
+    }
+
+    .qr-box img {
+      width: 220px;
+      height: 220px;
     }
 
     .date {
-      font-size: 1em;
-      margin-bottom: 20px;
-      color: #ccc; /* Light gray contrast on dark background */
+      font-size: 0.95rem;
+      color: #000;
+      margin-top: 1.5rem;
     }
 
-    .qr-container {
-      padding: 15px;
-      background-color: #000;
-      border: 2px solid #fff;
-    }
-
-    .qr-container img {
-      width: 200px;
-      height: 200px;
-    }
-
-    /* Accessibility enhancement */
-    @media (prefers-contrast: high) {
-      body {
-        background-color: #000;
-        color: #fff;
+    @media screen and (max-width: 480px) {
+      .card {
+        padding: 1.5rem;
       }
-    }
 
-    img[alt="QR Code"] {
-      outline: 2px dashed #aaa;
+      .qr-box img {
+        width: 180px;
+        height: 180px;
+      }
+
+      .qr-heading {
+        font-size: 1.2rem;
+        padding: 0.6rem 1rem;
+      }
+
+      .date {
+        font-size: 0.9rem;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Scan to Mark Attendance</h1>
-  <div class="date" aria-label="Today's Date">
-    <span style="color: #ffffff; font-size: 1.2em; font-weight: bold; border: 1px solid #888; padding: 4px;">
-      Date: {{ date if date else 'Not Passed' }}
-    </span>
-  </div>
-       
-
-  <div class="qr-container">
-    <img src="{{ url }}/generate_qr" alt="QR Code" />
+  <div class="card">
+    <h2 class="qr-heading">Scan to Mark Attendance</h2>
+    <div class="qr-box">
+      <img src="/generate_qr" alt="QR Code for Attendance" />
+    </div>
+    <div class="date">Today: {{ date }}</div>
   </div>
 </body>
 </html>

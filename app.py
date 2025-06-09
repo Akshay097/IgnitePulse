@@ -2,24 +2,27 @@ from flask import Flask, render_template, request, jsonify
 import json
 import datetime
 import math
-import pytz  # ✅ timezone for Atlantic
-from sheet_utils import log_attendance
-from qr_generator import qr_bp  # ✅ import the blueprint
+import pytz
+import os
+
+from sheet_utils import log_attendance, log_audit, check_device_binding, bind_device
+from qr_generator import qr_bp
+from device_utils import get_device_id_from_request
+from ip_logger import log_user_ip, is_ip_suspicious
+from audit_logger import log_audit_entry, detect_device_sharing, detect_multiple_ips
 
 app = Flask(__name__)
-app.register_blueprint(qr_bp)  # ✅ attach the QR routes to main app
+app.register_blueprint(qr_bp)
 
-# Load whitelist (approved emails)
 with open("whitelist.json", "r") as f:
     WHITELIST = set(json.load(f))
 
-# Set your office geolocation (example: Halifax, NS)
 OFFICE_LAT = 44.72338559753693
 OFFICE_LON = -63.6954247294425
-GEOFENCE_RADIUS_KM = 0.07  # 70 meters
+GEOFENCE_RADIUS_KM = 0.07
 
 def haversine(lat1, lon1, lat2, lon2):
-    R = 6371  # Earth radius in km
+    R = 6371
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
     a = (math.sin(dlat / 2) ** 2 +
@@ -39,64 +42,60 @@ def submit():
     email = data.get("email")
     lat = float(data.get("latitude"))
     lon = float(data.get("longitude"))
+    device_id = data.get("device_id")  # This matches the key from index.html
+    user_ip = request.remote_addr
+    device_id = get_device_id_from_request(request)
 
-    # ✅ Handle altitude safely
-    alt = data.get("altitude")
-    if alt is not None:
-        try:
-            alt = float(alt)
-        except ValueError:
-            alt = None
-
-    if not email or not lat or not lon:
+    if not email or not lat or not lon or not fingerprint:
         return jsonify({"status": "error", "message": "Missing data"}), 400
 
     if email not in WHITELIST:
-        print(f"❌ Unauthorized email: {email} — blocked", flush=True)
         return jsonify({"status": "error", "message": "Unauthorized email"}), 403
 
-    # ✅ This line must not be indented under the above if
-    distance = haversine(lat, lon, OFFICE_LAT, OFFICE_LON)
-
-    # Use Atlantic Daylight Time
     atlantic = pytz.timezone("Canada/Atlantic")
-    now = datetime.datetime.now(atlantic).strftime("%Y-%m-%d %H:%M:%S")
+    now_dt = datetime.datetime.now(atlantic)
+    now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+    date_key = now_dt.strftime("%Y-%m-%d")
 
-    print(f"📏 Calculated distance: {distance:.4f} km", flush=True)
-    print(f"📐 Altitude received: {alt}", flush=True)
+    # Log IP address and check for anomalies
+    log_user_ip(email, user_ip)
+    if is_ip_suspicious(email, user_ip):
+        print(f"⚠️ Suspicious IP for {email}: {user_ip}")
 
-    # Floor validation range (e.g. 5th floor)
-    ALT_MIN = 48
-    ALT_MAX = 62
+    # Detect device sharing and IP reuse
+    if detect_device_sharing(device_id, email):
+        print(f"⚠️ Device shared across multiple users: {device_id}")
+    if detect_multiple_ips(email, user_ip):
+        print(f"⚠️ Multiple IPs detected for user: {email}")
 
-    # 🧠 Flexible logic
-    if alt is None:
-        print("⚠️ No altitude — falling back to geofence only", flush=True)
-        log_attendance(email, lat, lon, now, "Absent", alt)
-        return jsonify({
-            "status": "warning",
-            "message": "Please contact your Coach or Ignite Audit Team member immediately, if you're in the office. Marked Absent."
-        })
+    # Log submission once per day per device
+    already_submitted = log_audit(email, now_str, user_ip, fingerprint, lat, lon)
+    if already_submitted:
+        return jsonify({"status": "warning", "message": "Attendance already marked from this device today."})
 
-    if distance > GEOFENCE_RADIUS_KM or not (ALT_MIN <= alt <= ALT_MAX):
-        print("🚫 Outside allowed location/altitude — Absent", flush=True)
-        log_attendance(email, lat, lon, now, "Absent", alt)
-        return jsonify({
-            "status": "warning",
-            "message": "You are outside the allowed area or floor. Marked Absent."
-        })
+    # Device Binding enforcement
+    bound = check_device_binding(email, fingerprint)
+    if not bound:
+        bind_device(email, fingerprint)
+        print(f"🔗 Bound new device for: {email}")
 
-    # ✅ Both conditions passed
-    print("✅ Inside geofence and altitude range — Present", flush=True)
-    log_attendance(email, lat, lon, now, "Present", alt)
+    # Geofence check
+    distance = haversine(lat, lon, OFFICE_LAT, OFFICE_LON)
+    print(f"📍 IP: {user_ip} | 📏 Distance: {distance:.2f} km")
+
+    if distance > GEOFENCE_RADIUS_KM:
+        log_attendance(email, lat, lon, now_str, "Absent")
+        log_audit_entry(email, now_str, device_id, user_ip, "Absent", reason="Outside geofence")
+        return jsonify({"status": "warning", "message": "Outside office geofence. Marked Absent."})
+
+    log_attendance(email, lat, lon, now_str, "Present")
+    log_audit_entry(email, now_str, device_id, user_ip, "Present")
     return jsonify({"status": "success", "message": "Attendance marked!"})
 
 @app.route("/qrcode")
 def show_qr():
     today = datetime.datetime.now().strftime("%m-%d-%Y")
-    qr_filename = f"qr_{today}.png"
-    qr_path = f"/static/{qr_filename}"
-    return render_template("qrcode.html", today=today, qr_path=qr_path)
+    return render_template("qrcode.html", date=today)
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0')

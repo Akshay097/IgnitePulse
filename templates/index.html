@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ignitemeetup Attendance</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: "Segoe UI", sans-serif;
@@ -22,7 +19,6 @@
       min-height: 100vh;
       padding: 1rem;
     }
-
     .card {
       background-color: #fff;
       border-radius: 18px;
@@ -33,13 +29,11 @@
       text-align: center;
       border: 2px solid #000;
     }
-
     h2 {
       margin-bottom: 1.5rem;
       font-size: 1.5rem;
       color: #000;
     }
-
     input,
     button {
       width: 100%;
@@ -49,13 +43,11 @@
       border: none;
       border-radius: 8px;
     }
-
     input {
       background-color: #f0f0f0;
       color: #000;
       border: 1px solid #ccc;
     }
-
     button {
       background-color: #ffe44c;
       color: #000;
@@ -68,25 +60,16 @@
       cursor: pointer;
       transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
     }
-
     button:hover {
       transform: translateY(-1px);
       box-shadow: 4px 4px 0 #000;
     }
-
     #status {
       margin-top: 1rem;
       font-size: 0.95rem;
     }
-
-    .success {
-      color: #4caf50;
-    }
-
-    .error {
-      color: #f44336;
-    }
-
+    .success { color: #4caf50; }
+    .error { color: #f44336; }
     @media screen and (max-width: 420px) {
       .card {
         padding: 1.5rem;
@@ -94,33 +77,20 @@
         box-shadow: none;
         border: 1px solid #000;
       }
-
-      h2 {
-        font-size: 1.3rem;
-      }
-
+      h2 { font-size: 1.3rem; }
       input,
       button {
         font-size: 0.95rem;
         padding: 0.65rem;
       }
-
-      #status {
-        font-size: 0.9rem;
-      }
+      #status { font-size: 0.9rem; }
     }
-
     @media (prefers-contrast: high) {
-      body {
-        background-color: #000;
-        color: #fff;
-      }
-
+      body { background-color: #000; color: #fff; }
       .card {
         background-color: #111;
         border: 2px solid #fff;
       }
-
       input {
         background-color: #fff;
         color: #000;
@@ -131,43 +101,67 @@
 <body>
   <div class="card">
     <h2>Mark Your Attendance</h2>
-    <input
-      type="email"
-      id="email"
-      placeholder="name@ibm.com"
-      required
-      aria-label="Email input"
-    />
+    <input type="email" id="email" placeholder="name@ibm.com" required aria-label="Email input" />
     <button onclick="markAttendance()">Submit Attendance</button>
     <p id="status" role="status" aria-live="polite"></p>
   </div>
 
   <script>
-    function markAttendance() {
+    function getQueryParam(name) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    }
+
+    async function getDeviceId() {
+      const deviceProps = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width,
+        screen.height,
+        screen.colorDepth,
+        Intl.DateTimeFormat().resolvedOptions().timeZone
+      ].join('|');
+      const msgUint8 = new TextEncoder().encode(deviceProps);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+    }
+
+    async function markAttendance() {
       const email = document.getElementById("email").value;
       const statusEl = document.getElementById("status");
-  
+      const token = getQueryParam("token");
+
       if (!email) {
         statusEl.className = "error";
         statusEl.innerText = "Email is required.";
         return;
       }
-  
+
+      if (!token) {
+        statusEl.className = "error";
+        statusEl.innerText = "Invalid QR session. Please refresh the QR page.";
+        return;
+      }
+
       if (!navigator.geolocation) {
         statusEl.className = "error";
         statusEl.innerText = "Geolocation is not supported by your browser.";
         return;
       }
-  
+
+      const deviceId = await getDeviceId();
+
       navigator.geolocation.getCurrentPosition(
         function (position) {
           const data = {
             email: email,
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-            altitude: position.coords.altitude || null  // ✅ FIXED
+            token: token,
+            device_id: deviceId
           };
-  
+
           fetch("/submit", {
             method: "POST",
             headers: {
@@ -186,12 +180,12 @@
             }
           });
         },
-        function (error) {
+        function () {
           statusEl.className = "error";
           statusEl.innerText = "Location access denied.";
         }
       );
     }
-  </script>  
+  </script>
 </body>
 </html>
