@@ -7,36 +7,22 @@ import hashlib
 
 qr_bp = Blueprint("qr", __name__)
 
-# Global token store shared for validation
-# You can optionally move this to a separate file/module for better design
-class TokenStore:
-    valid_token = None
-    expires_at = None
+# ✅ Timezone setup
+atlantic = pytz.timezone("Canada/Atlantic")
 
-def generate_new_token():
-    atlantic = pytz.timezone("Canada/Atlantic")
+# ✅ Clean token generation (no in-memory state)
+def get_dynamic_token():
+    """Always calculate token based on current minute (stateless)."""
     now = datetime.now(atlantic)
-    rounded = now.replace(second=0, microsecond=0)  # exact minute
+    rounded = now.replace(second=0, microsecond=0)
     token_base = rounded.strftime("%Y-%m-%d %H:%M")
     token = hashlib.sha256(token_base.encode()).hexdigest()[:10]
-
-    TokenStore.valid_token = token
-    TokenStore.expires_at = rounded + timedelta(minutes=1)
-    print(f"🔐 Generated new QR token: {token} valid until {TokenStore.expires_at}", flush=True)
     return token
-
-def get_current_token():
-    atlantic = pytz.timezone("Canada/Atlantic")
-    now = datetime.now(atlantic)
-
-    if TokenStore.valid_token is None or now >= TokenStore.expires_at:
-        return generate_new_token()
-    return TokenStore.valid_token
 
 @qr_bp.route("/generate_qr")
 def generate_qr():
     base_url = url_for("index", _external=True)
-    token = get_current_token()
+    token = get_dynamic_token()
     qr_data = f"{base_url}?token={token}"
 
     qr = qrcode.make(qr_data)
@@ -44,11 +30,11 @@ def generate_qr():
     qr.save(img_io, "PNG")
     img_io.seek(0)
 
+    print(f"🔐 Generated QR token: {token}", flush=True)
     return send_file(img_io, mimetype="image/png")
 
 @qr_bp.route("/qrcode")
 def show_qr():
-    atlantic = pytz.timezone("Canada/Atlantic")
     date_today = datetime.now(atlantic).strftime("%m-%d-%Y")
     url = request.host_url.strip("/")
     return render_template("qrcode.html", date=date_today, url=url)
