@@ -15,11 +15,19 @@ def save_ip_logs(logs):
         json.dump(logs, f, indent=2)
 
 def get_client_ip(request):
-    # Handles direct and proxy headers
-    return request.headers.get('X-Forwarded-For', request.remote_addr)
+    """
+    Extract real client IP, even behind proxy (Render uses proxy).
+    """
+    if request.headers.get('X-Forwarded-For'):
+        # In Render, X-Forwarded-For might contain multiple IPs, take first
+        forwarded_for = request.headers.get('X-Forwarded-For').split(',')[0].strip()
+        return forwarded_for
+    return request.remote_addr
 
-# ✅ Rename for compatibility with app.py
 def log_user_ip(email, ip):
+    """
+    Log user's IP history locally (this is not pushed to Google Sheet).
+    """
     logs = load_ip_logs()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if email not in logs:
@@ -28,8 +36,10 @@ def log_user_ip(email, ip):
     save_ip_logs(logs)
     print(f"🛡️ Logged IP for {email}: {ip} at {now}", flush=True)
 
-# ✅ Rename for compatibility with app.py
 def is_ip_suspicious(email, ip):
+    """
+    Check if this email has logged in from multiple IP addresses.
+    """
     logs = load_ip_logs()
     entries = logs.get(email, [])
     known_ips = {entry["ip"] for entry in entries}
