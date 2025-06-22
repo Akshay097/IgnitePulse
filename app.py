@@ -7,7 +7,7 @@ import os
 from datetime import timedelta
 
 from sheet_utils import log_attendance, log_audit, check_device_binding, bind_device
-from qr_generator import qr_bp, token_store  # import token store from qr_generator
+from qr_generator import qr_bp  
 from device_utils import get_device_id_from_request
 from ip_logger import log_user_ip, is_ip_suspicious, get_client_ip
 from audit_logger import log_audit_entry, detect_device_sharing, detect_multiple_ips
