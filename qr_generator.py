@@ -1,22 +1,23 @@
 import io
 import qrcode
 from flask import Blueprint, send_file, url_for, render_template, request
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 import hashlib
 
 qr_bp = Blueprint("qr", __name__)
 
-# ✅ Timezone setup
+# ✅ Timezone for Atlantic Canada
 atlantic = pytz.timezone("Canada/Atlantic")
 
-# ✅ Clean token generation (no in-memory state)
 def get_dynamic_token():
-    """Always calculate token based on current minute (stateless)."""
+    """
+    Stateless: Always generate token based on the current rounded minute.
+    """
     now = datetime.now(atlantic)
-    rounded = now.replace(second=0, microsecond=0)
-    token_base = rounded.strftime("%Y-%m-%d %H:%M")
-    token = hashlib.sha256(token_base.encode()).hexdigest()[:10]
+    rounded_minute = now.replace(second=0, microsecond=0)
+    token_seed = rounded_minute.strftime("%Y-%m-%d %H:%M")
+    token = hashlib.sha256(token_seed.encode()).hexdigest()[:10]
     return token
 
 @qr_bp.route("/generate_qr")
@@ -35,6 +36,6 @@ def generate_qr():
 
 @qr_bp.route("/qrcode")
 def show_qr():
-    date_today = datetime.now(atlantic).strftime("%m-%d-%Y")
+    today = datetime.now(atlantic).strftime("%m-%d-%Y")
     url = request.host_url.strip("/")
-    return render_template("qrcode.html", date=date_today, url=url)
+    return render_template("qrcode.html", date=today, url=url)

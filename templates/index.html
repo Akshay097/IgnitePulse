@@ -25,7 +25,7 @@
       padding: 2rem;
       width: 100%;
       max-width: 380px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
       text-align: center;
       border: 2px solid #000;
     }
@@ -34,8 +34,7 @@
       font-size: 1.5rem;
       color: #000;
     }
-    input,
-    button {
+    input, button {
       width: 100%;
       padding: 0.75rem;
       margin: 0.75rem 0;
@@ -70,32 +69,6 @@
     }
     .success { color: #4caf50; }
     .error { color: #f44336; }
-    @media screen and (max-width: 420px) {
-      .card {
-        padding: 1.5rem;
-        border-radius: 14px;
-        box-shadow: none;
-        border: 1px solid #000;
-      }
-      h2 { font-size: 1.3rem; }
-      input,
-      button {
-        font-size: 0.95rem;
-        padding: 0.65rem;
-      }
-      #status { font-size: 0.9rem; }
-    }
-    @media (prefers-contrast: high) {
-      body { background-color: #000; color: #fff; }
-      .card {
-        background-color: #111;
-        border: 2px solid #fff;
-      }
-      input {
-        background-color: #fff;
-        color: #000;
-      }
-    }
   </style>
 </head>
 <body>
@@ -112,25 +85,27 @@
       return url.searchParams.get(name);
     }
 
-    async function getDeviceId() {
-      const deviceProps = [
-        navigator.userAgent,
-        navigator.language,
-        screen.width,
-        screen.height,
-        screen.colorDepth,
-        Intl.DateTimeFormat().resolvedOptions().timeZone
-      ].join('|');
-      const msgUint8 = new TextEncoder().encode(deviceProps);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+    // ✅ Production-grade Device Fingerprint using persistent browser storage (UUID)
+    function generateUUID() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function getDeviceId() {
+      let deviceId = localStorage.getItem("device_id");
+      if (!deviceId) {
+        deviceId = generateUUID();
+        localStorage.setItem("device_id", deviceId);
+      }
+      return deviceId;
     }
 
     async function markAttendance() {
       const email = document.getElementById("email").value;
       const statusEl = document.getElementById("status");
       const token = getQueryParam("token");
+      const deviceId = getDeviceId();
 
       if (!email) {
         statusEl.className = "error";
@@ -150,8 +125,6 @@
         return;
       }
 
-      const deviceId = await getDeviceId();
-
       navigator.geolocation.getCurrentPosition(
         function (position) {
           const data = {
@@ -164,13 +137,11 @@
 
           fetch("/submit", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
           })
-          .then((response) => response.json())
-          .then((res) => {
+          .then(response => response.json())
+          .then(res => {
             if (res.status === "success") {
               statusEl.className = "success";
               statusEl.innerText = res.message;
