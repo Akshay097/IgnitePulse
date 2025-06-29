@@ -32,7 +32,7 @@ def log_attendance(email, lat, lon, timestamp, status, device_id=None, ip=None, 
     try:
         atlantic = pytz.timezone("Canada/Atlantic")
         sheet_title = datetime.datetime.now(atlantic).strftime("%m-%d-%Y")
-        spreadsheet = client.open("Ignitemeetup Attendance")
+        spreadsheet = client.open("IgnitePulse")
 
         try:
             worksheet = spreadsheet.worksheet(sheet_title)
